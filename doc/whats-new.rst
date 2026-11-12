@@ -219,6 +219,14 @@ Deprecations
 
 Bug Fixes
 ~~~~~~~~~
+- :py:meth:`Dataset.to_netcdf`, :py:meth:`DataArray.to_netcdf` and
+  :py:meth:`DataTree.to_netcdf` without ``engine`` no longer raise
+  ``ValueError: list.remove(x): x not in list`` when the ``netcdf_engine_order``
+  option of :py:func:`set_options` leaves out an engine that cannot write the
+  requested format or target, e.g. ``netcdf_engine_order=["h5netcdf", "netcdf4"]``
+  with ``format="NETCDF4"`` or any :py:class:`DataTree`. If none of the engines
+  in the option is suitable, the error now says so (:pull:`XXXXX`).
+  By `Darshan P Pawar <https://github.com/Darshanpawar7>`_.
 - ``.dt.decimal_year`` now returns NaN for ``NaT`` values instead of raising
   ``ValueError: cannot convert float NaN to integer``
   (:pull:`11860`).

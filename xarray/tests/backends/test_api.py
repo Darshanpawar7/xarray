@@ -142,6 +142,46 @@ def test_get_default_netcdf_write_engine() -> None:
         assert engine == "scipy"
 
 
+@requires_netCDF4
+@requires_scipy
+@requires_h5netcdf
+def test_get_default_netcdf_write_engine_subset() -> None:
+    """Find the default engine when netcdf_engine_order leaves out engines."""
+    with xr.set_options(netcdf_engine_order=["h5netcdf", "netcdf4"]):
+        engine = get_default_netcdf_write_engine("", format="NETCDF4")
+        assert engine == "h5netcdf"
+
+    with xr.set_options(netcdf_engine_order=["netcdf4"]):
+        engine = get_default_netcdf_write_engine("", format="NETCDF3_CLASSIC")
+        assert engine == "netcdf4"
+
+    with xr.set_options(netcdf_engine_order=["h5netcdf", "scipy"]):
+        engine = get_default_netcdf_write_engine(io.BytesIO(), format=None)
+        assert engine == "h5netcdf"
+
+
+def test_get_default_netcdf_write_engine_subset_no_match() -> None:
+    """Name netcdf_engine_order in the error when none of its engines fits."""
+    with xr.set_options(netcdf_engine_order=["h5netcdf"]):
+        with pytest.raises(
+            ValueError,
+            match=re.escape(
+                "cannot write NetCDF files with format='NETCDF3_CLASSIC' because "
+                "no engine in netcdf_engine_order=['h5netcdf'] is suitable; "
+                "pass engine=... explicitly"
+            ),
+        ):
+            get_default_netcdf_write_engine("", format="NETCDF3_CLASSIC")
+
+    with xr.set_options(netcdf_engine_order=["scipy"]):
+        with pytest.raises(ValueError, match="no engine in netcdf_engine_order"):
+            get_default_netcdf_write_engine("", format="NETCDF4_CLASSIC")
+
+    with xr.set_options(netcdf_engine_order=["netcdf4"]):
+        with pytest.raises(ValueError, match="no engine in netcdf_engine_order"):
+            get_default_netcdf_write_engine(io.BytesIO(), format=None)
+
+
 @requires_h5netcdf
 def test_default_engine_h5netcdf(monkeypatch):
     """Test the default netcdf engine when h5netcdf is the only importable module."""

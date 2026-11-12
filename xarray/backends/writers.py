@@ -188,9 +188,9 @@ def get_default_netcdf_write_engine(
         # when the oldest supported version of h5netcdf supports it:
         # https://github.com/h5netcdf/h5netcdf/pull/283
         if format != "NETCDF4":
-            candidates.remove("h5netcdf")
+            candidates = [c for c in candidates if c != "h5netcdf"]
         if format not in {"NETCDF3_64BIT", "NETCDF3_CLASSIC"}:
-            candidates.remove("scipy")
+            candidates = [c for c in candidates if c != "scipy"]
 
     nczarr_mode = isinstance(path_or_file, str) and path_or_file.endswith(
         "#mode=nczarr"
@@ -199,7 +199,7 @@ def get_default_netcdf_write_engine(
         candidates[:] = ["netcdf4"]
 
     if isinstance(path_or_file, IOBase):
-        candidates.remove("netcdf4")
+        candidates = [c for c in candidates if c != "netcdf4"]
 
     for engine in candidates:
         module_name = module_names[engine]
@@ -210,6 +210,12 @@ def get_default_netcdf_write_engine(
         format_str = " in NCZarr format"
     else:
         format_str = f" with {format=}" if format is not None else ""
+    if not candidates:
+        raise ValueError(
+            f"cannot write NetCDF files{format_str} because no engine in "
+            f"netcdf_engine_order={OPTIONS['netcdf_engine_order']!r} is suitable; "
+            "pass engine=... explicitly"
+        )
     libraries = ", ".join(module_names[c] for c in candidates)
     raise ValueError(
         f"cannot write NetCDF files{format_str} because none of the suitable "
