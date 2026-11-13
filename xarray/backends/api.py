@@ -14,7 +14,6 @@ from typing import (
     Any,
     Literal,
     Union,
-    cast,
 )
 
 from xarray.backends import plugins
@@ -1845,6 +1844,7 @@ def open_mfdataset(
 
     if invalid_paths:
         paths = _remove_path(paths, invalid_paths)
+        paths1d = [p for p in paths1d if p not in invalid_paths]
         if combine == "nested":
             # Create new ids and paths based on removed items
             combined_ids_paths = _infer_concat_order_from_positions(paths)
@@ -1899,8 +1899,7 @@ def open_mfdataset(
 
     # read global attributes from the attrs_file or from the first dataset
     if attrs_file is not None:
-        if isinstance(attrs_file, os.PathLike):
-            attrs_file = cast(str, os.fspath(attrs_file))
+        attrs_file = _normalize_path(attrs_file)
         combined.attrs = datasets[paths1d.index(attrs_file)].attrs
 
     return combined

@@ -1240,6 +1240,49 @@ class TestDask(DatasetIOBase):
                 # attributes from ds1 are not retained, e.g.,
                 assert "test1" not in actual.attrs
 
+    def test_open_mfdataset_attrs_file_relative_path(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        original = Dataset({"foo": ("x", np.random.randn(10))})
+        ds1 = original.isel(x=slice(5))
+        ds2 = original.isel(x=slice(5, 10))
+        ds1.attrs["test1"] = "foo"
+        ds2.attrs["test2"] = "bar"
+        ds1.to_netcdf(tmp_path / "1.nc")
+        ds2.to_netcdf(tmp_path / "2.nc")
+        monkeypatch.chdir(tmp_path)
+        with open_mfdataset(
+            ["1.nc", "2.nc"], concat_dim="x", combine="nested", attrs_file="2.nc"
+        ) as actual:
+            assert actual.attrs["test2"] == ds2.attrs["test2"]
+            assert "test1" not in actual.attrs
+
+    def test_open_mfdataset_attrs_file_with_ignore(self) -> None:
+        original = Dataset({"foo": ("x", np.random.randn(10)), "x": np.arange(10)})
+        with create_tmp_files(2) as (tmp1, tmp2):
+            ds1 = original.isel(x=slice(5))
+            ds2 = original.isel(x=slice(5, 10))
+            ds1.attrs["test1"] = "foo"
+            ds2.attrs["test2"] = "bar"
+            ds1.to_netcdf(tmp1)
+            ds2.to_netcdf(tmp2)
+            paths = ["non-existent-file.nc", tmp1, tmp2]
+            # the skipped file must not shift which dataset attrs_file refers to
+            with open_mfdataset(
+                paths,
+                concat_dim="x",
+                combine="nested",
+                errors="ignore",
+                attrs_file=tmp1,
+            ) as actual:
+                assert actual.attrs["test1"] == ds1.attrs["test1"]
+                assert "test2" not in actual.attrs
+            with open_mfdataset(
+                paths, combine="by_coords", errors="ignore", attrs_file=tmp2
+            ) as actual:
+                assert actual.attrs["test2"] == ds2.attrs["test2"]
+                assert "test1" not in actual.attrs
+
     def test_open_mfdataset_auto_combine(self) -> None:
         original = Dataset({"foo": ("x", np.random.randn(10)), "x": np.arange(10)})
         with create_tmp_file() as tmp1:

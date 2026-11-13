@@ -219,6 +219,12 @@ Deprecations
 
 Bug Fixes
 ~~~~~~~~~
+- :py:func:`open_mfdataset` now finds ``attrs_file`` when it is written
+  differently from ``paths``, e.g. as a relative path or with ``~`` or ``./``,
+  instead of raising ``ValueError: ... is not in list``. With ``errors="ignore"``
+  or ``errors="warn"``, a file that could not be opened no longer makes it take
+  the attributes from the wrong file or raise ``IndexError`` (:pull:`XXXXX`).
+  By `Darshan P Pawar <https://github.com/Darshanpawar7>`_.
 - ``.dt.decimal_year`` now returns NaN for ``NaT`` values instead of raising
   ``ValueError: cannot convert float NaN to integer``
   (:pull:`11860`).
